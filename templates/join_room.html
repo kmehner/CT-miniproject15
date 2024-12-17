@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Chat</title>
+</head>
+<body>
+    <h1>WebSocket Chat Application</h1>
+
+    <label>Username:</label>
+    <input id="username" type="text" placeholder="Enter your name" />
+    <br>
+    <label>Room:</label>
+    <input id="room" type="text" placeholder="Enter room name" />
+    <button onclick="connectWebSocket()">Join Room</button>
+
+    <div id="chat-box">
+        <h3>Messages</h3>
+        <div id="messages"></div>
+    </div>
+
+    <h2> Messages from Specific User</h2>
+    <label for="message-input">Message</label>
+    <input type="text" id="message-input" autocomplete="off">
+    <button type="submit">Send</button>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.3.2/socket.io.min.js"></script>
+    <script>
+        const socket = io();
+        const username = document.getElementById('username');
+        const room = document.getElementById('room');
+        const message = document.getElementById('message');
+        const messageinput = document.getElementById('message-input');
+        const chatBox = document.getElementById('messages');
+
+
+        function connectWebSocket() {
+            if (!username || !room) {
+                alert("Please enter a username and room name.");
+                return;
+            }
+
+            socket = new WebSocket('ws://localhost:5000');
+
+            socket.onopen = function () {
+                console.log("WebSocket connection opened");
+                socket.send(JSON.stringify({
+                    type: "join",
+                    username: username,
+                    room: room
+                }));
+            };
+
+            socket.onmessage = function (event) {
+                const data = JSON.parse(event.data);
+
+                if (data.type === "message") {
+                    chatBox.innerHTML += `<p><b>${data.username}:</b> ${data.message}</p>`;
+                } else if (data.type === "notification") {
+                    chatBox.innerHTML += `<p>${data.message}</p>`;
+                }
+            };
+
+            socket.onclose = function () {
+                console.log("WebSocket connection closed");
+                alert("You have been disconnected.");
+            };
+
+            socket.onerror = function (error) {
+                console.error("WebSocket error:", error);
+            };
+        }
+
+        function sendMessage() {
+            if (socket && message) {
+                socket.send(JSON.stringify({
+                    type: "message",
+                    username: username,
+                    room: room,
+                    message: message
+                }));
+                document.getElementById('message').value = '';  
+            }
+        }
+    </script>
+</body>
+</html>

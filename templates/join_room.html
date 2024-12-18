@@ -23,7 +23,8 @@
     <h2> Messages from Specific User</h2>
     <label for="message-input">Message</label>
     <input type="text" id="message-input" autocomplete="off">
-    <button type="submit">Send</button>
+    <button type="button" onclick="sendMessage()">Send</button>
+
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.3.2/socket.io.min.js"></script>
     <script>
@@ -34,54 +35,38 @@
         const messageinput = document.getElementById('message-input');
         const chatBox = document.getElementById('messages');
 
-
         function connectWebSocket() {
-            if (!username || !room) {
+            if (!username.value || !room.value) {
                 alert("Please enter a username and room name.");
                 return;
             }
 
+            socket.emit("join", {
+                username: username.value,
+                room: room.value
+            });
 
-            socket.onopen = function () {
-                console.log("WebSocket connection opened");
-                socket.send(JSON.stringify({
-                    type: "join",
-                    username: username,
-                    room: room
-                }));
-            };
-
-            socket.onmessage = function (event) {
-                const data = JSON.parse(event.data);
-
+            socket.on("message", (data) => {
                 if (data.type === "message") {
                     chatBox.innerHTML += `<p><b>${data.username}:</b> ${data.message}</p>`;
                 } else if (data.type === "notification") {
                     chatBox.innerHTML += `<p>${data.message}</p>`;
                 }
-            };
-
-            socket.onclose = function () {
-                console.log("WebSocket connection closed");
-                alert("You have been disconnected.");
-            };
-
-            socket.onerror = function (error) {
-                console.error("WebSocket error:", error);
-            };
+            });
         }
+
 
         function sendMessage() {
-            if (socket && message) {
-                socket.send(JSON.stringify({
-                    type: "message",
-                    username: username,
-                    room: room,
-                    message: message
-                }));
-                document.getElementById('message').value = '';  
+            if (messageinput.value.trim() !== "") {
+                socket.emit("message", {
+                    username: username.value,
+                    room: room.value,
+                    message: messageinput.value
+                });
+                messageinput.value = '';  
             }
         }
+
     </script>
 </body>
 </html>
